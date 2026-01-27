@@ -22,3 +22,4 @@ data/cache/           # Thumbnail cache (regenerated automatically)
 # - data/fonts/              (needed for UI)
 # - data/drive_mapping.json  (needed for image URLs)
 # - data/embeddings/         (needed for face matching)
+data/cache/
