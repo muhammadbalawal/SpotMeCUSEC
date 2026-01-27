@@ -1,4 +1,4 @@
-kkimport os
+import os
 import io
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaIoBaseDownload
@@ -21,7 +21,7 @@ creds = service_account.Credentials.from_service_account_file(
     SERVICE_ACCOUNT_FILE, scopes=SCOPES
 )
 
-service = build("drive", "drive", credentials=creds)
+service = build("drive", "v3", credentials=creds)
 
 # ----------------------------
 # LIST FILES IN FOLDER

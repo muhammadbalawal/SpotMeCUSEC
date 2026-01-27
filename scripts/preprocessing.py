@@ -86,7 +86,7 @@ class FaceEmbeddingExtractor:
             raise FileNotFoundError(f"Photos directory not found: {PHOTOS_DIR}")
         
         # Get all image files
-        image_extensions = {'.jpg', '.jpeg', '.png', '.bmp', '.webp'}
+        image_extensions = {'.jpg', '.jpeg', '.png'}
         image_files = [
             f for f in PHOTOS_DIR.iterdir()
             if f.suffix.lower() in image_extensions
@@ -178,7 +178,7 @@ def validate_environment():
         return False
     
     # Check if photos directory has images
-    image_extensions = {'.jpg', '.jpeg', '.png', '.bmp', '.webp'}
+    image_extensions = {'.jpg', '.jpeg', '.png'}
     image_files = [
         f for f in PHOTOS_DIR.iterdir()
         if f.suffix.lower() in image_extensions
