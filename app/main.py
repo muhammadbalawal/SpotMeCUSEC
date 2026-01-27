@@ -9,6 +9,7 @@ from fastapi.responses import JSONResponse, FileResponse, Response
 from pathlib import Path
 import logging
 import json
+import sqlite3
 import httpx
 from PIL import Image
 from io import BytesIO
@@ -35,6 +36,34 @@ FONTS_DIR = DATA_DIR / "fonts"
 DRIVE_MAPPING_FILE = DATA_DIR / "drive_mapping.json"
 CACHE_DIR = DATA_DIR / "cache"
 CACHE_DIR.mkdir(exist_ok=True)
+
+# SQLite analytics database
+DB_PATH = DATA_DIR / "analytics.db"
+
+def init_db():
+    """Initialize the analytics database"""
+    conn = sqlite3.connect(DB_PATH)
+    conn.execute("CREATE TABLE IF NOT EXISTS stats (id INTEGER PRIMARY KEY, search_count INTEGER DEFAULT 0)")
+    conn.execute("INSERT OR IGNORE INTO stats (id, search_count) VALUES (1, 0)")
+    conn.commit()
+    conn.close()
+
+def increment_search_count():
+    """Increment the search counter"""
+    conn = sqlite3.connect(DB_PATH)
+    conn.execute("UPDATE stats SET search_count = search_count + 1 WHERE id = 1")
+    conn.commit()
+    conn.close()
+
+def get_search_count():
+    """Get current search count"""
+    conn = sqlite3.connect(DB_PATH)
+    result = conn.execute("SELECT search_count FROM stats WHERE id = 1").fetchone()
+    conn.close()
+    return result[0] if result else 0
+
+# Initialize database
+init_db()
 
 # Thumbnail settings
 THUMB_SIZE = (400, 300)
@@ -191,6 +220,9 @@ async def find_me(
                 detail=result.get("error", "Failed to process image")
             )
 
+        # Increment search counter
+        increment_search_count()
+
         # Add photo URLs to matches (Drive only)
         for match in result["matches"]:
             filename = match['filename']
@@ -223,6 +255,14 @@ async def photos_count():
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/stats")
+async def stats():
+    """Get search analytics"""
+    return {
+        "total_searches": get_search_count()
+    }
 
 
 @app.get("/drive-image/{file_id}")
