@@ -2,14 +2,11 @@
 Extracts face embeddings from all photos once and stores them for fast lookup.
 """
 
-import os
-import json
 import cv2
 import numpy as np
 from pathlib import Path
-from datetime import datetime
 from insightface.app import FaceAnalysis
-from typing import List, Dict, Any
+from typing import List, Dict
 import logging
 
 # Setup logging
@@ -22,7 +19,7 @@ logger = logging.getLogger(__name__)
 # Configuration
 PHOTOS_DIR = Path("data/photos")
 EMBEDDINGS_DIR = Path("data/embeddings")
-EMBEDDINGS_FILE = EMBEDDINGS_DIR / "embeddings.json"
+EMBEDDINGS_FILE = EMBEDDINGS_DIR / "embeddings.npz"
 
 # Model settings
 MODEL_NAME = "buffalo_l"
@@ -50,51 +47,35 @@ class FaceEmbeddingExtractor:
         logger.info(f"Detection size: {DET_SIZE}")
         logger.info(f"Using GPU: CUDA available")
     
-    def extract_faces_from_image(self, image_path: Path) -> List[Dict[str, Any]]:
+    def extract_faces_from_image(self, image_path: Path) -> List[np.ndarray]:
         """
         Extract all faces from a single image
-        
+
         Args:
             image_path: Path to image file
-            
+
         Returns:
-            List of face data dictionaries containing embeddings and metadata
+            List of face embedding arrays (512-dim each)
         """
         try:
             # Read image
             img = cv2.imread(str(image_path))
-            
+
             if img is None:
                 logger.warning(f"Could not read image: {image_path}")
                 return []
-            
+
             # Get all faces in the image
             faces = self.app.get(img)
-            
-            # Extract face data
-            face_data = []
-            for face in faces:
-                face_info = {
-                    "embedding": face.embedding.tolist(),
-                    "bbox": face.bbox.astype(int).tolist(),
-                    "det_score": float(face.det_score),
-                    "kps": face.kps.tolist() if face.kps is not None else None
-                }
-                
-                if hasattr(face, 'age'):
-                    face_info['age'] = int(face.age)
-                if hasattr(face, 'gender'):
-                    face_info['gender'] = int(face.gender)
-                
-                face_data.append(face_info)
-            
-            return face_data
+
+            # Extract embeddings only
+            return [face.embedding for face in faces]
             
         except Exception as e:
             logger.error(f"Error processing {image_path}: {str(e)}")
             return []
     
-    def process_all_photos(self) -> Dict[str, Any]:
+    def process_all_photos(self) -> dict:
         """
         Process all photos in the photos directory
         
@@ -127,11 +108,7 @@ class FaceEmbeddingExtractor:
             faces = self.extract_faces_from_image(image_path)
             
             if faces:
-                embeddings_data[image_path.name] = {
-                    "faces": faces,
-                    "face_count": len(faces),
-                    "processed_at": datetime.now().isoformat()
-                }
+                embeddings_data[image_path.name] = faces
                 total_faces += len(faces)
             
             processed += 1
@@ -151,42 +128,43 @@ class FaceEmbeddingExtractor:
         
         return embeddings_data
     
-    def save_embeddings(self, embeddings_data: Dict[str, Any]):
+    def save_embeddings(self, embeddings_data: dict):
         """
-        Save embeddings to JSON file
-        
+        Save embeddings to numpy binary file
+
         Args:
-            embeddings_data: Dictionary containing all embeddings
+            embeddings_data: Dictionary mapping filename -> list of embeddings
         """
         # Create embeddings directory if it doesn't exist
         EMBEDDINGS_DIR.mkdir(parents=True, exist_ok=True)
-        
-        # Add metadata
-        output_data = {
-            "metadata": {
-                "model": MODEL_NAME,
-                "detection_size": DET_SIZE,
-                "detection_threshold": DET_THRESH,
-                "total_photos": len(embeddings_data),
-                "total_faces": sum(
-                    data["face_count"] for data in embeddings_data.values()
-                ),
-                "created_at": datetime.now().isoformat(),
-                "embedding_dimension": 512  # FaceNet512 produces 512-dim embeddings
-            },
-            "embeddings": embeddings_data
-        }
-        
-        # Save to JSON
+
+        # Flatten to arrays for fast similarity search
+        all_embeddings = []
+        all_filenames = []
+
+        for filename, embeddings in embeddings_data.items():
+            for emb in embeddings:
+                all_embeddings.append(emb)
+                all_filenames.append(filename)
+
+        # Convert to numpy arrays
+        embeddings_array = np.array(all_embeddings, dtype=np.float32)
+        filenames_array = np.array(all_filenames)
+
+        # Save to compressed numpy binary
         logger.info(f"Saving embeddings to {EMBEDDINGS_FILE}...")
-        with open(EMBEDDINGS_FILE, 'w') as f:
-            json.dump(output_data, f, indent=2)
-        
+        np.savez_compressed(
+            EMBEDDINGS_FILE,
+            embeddings=embeddings_array,
+            filenames=filenames_array
+        )
+
         # Calculate file size
         file_size_mb = EMBEDDINGS_FILE.stat().st_size / (1024 * 1024)
         logger.info(f"Embeddings saved successfully!")
         logger.info(f"  - File: {EMBEDDINGS_FILE}")
         logger.info(f"  - Size: {file_size_mb:.2f} MB")
+        logger.info(f"  - Shape: {embeddings_array.shape}")
 
 
 def validate_environment():
