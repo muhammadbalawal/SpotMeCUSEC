@@ -39,7 +39,7 @@ def load_embeddings() -> tuple[np.ndarray, np.ndarray]:
             "Please run preprocessing.py first."
         )
 
-    data = np.load(EMBEDDINGS_FILE)
+    data = np.load(EMBEDDINGS_FILE, allow_pickle=True)
     embeddings = data["embeddings"]
     filenames = data["filenames"]
 
