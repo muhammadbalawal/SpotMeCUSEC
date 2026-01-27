@@ -3,14 +3,15 @@ FROM python:3.11-slim
 # Set working directory
 WORKDIR /app
 
-# Install system dependencies for OpenCV and image processing
+# Install system dependencies for OpenCV, image processing, and building InsightFace
 RUN apt-get update && apt-get install -y \
-    libgl1-mesa-glx \
+    libgl1 \
     libglib2.0-0 \
     libsm6 \
     libxext6 \
     libxrender-dev \
     libgomp1 \
+    g++ \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements first for caching
@@ -25,8 +26,8 @@ COPY . .
 # Create cache directory
 RUN mkdir -p data/cache
 
-# Expose port (Hugging Face uses 7860)
-EXPOSE 7860
+# Expose port
+EXPOSE 8000
 
-# Run the app
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "7860"]
+# Run the app (PORT env var set by Railway/HF)
+CMD uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}

@@ -1,3 +1,12 @@
+---
+title: SpotMe CUSEC
+emoji: 📸
+colorFrom: blue
+colorTo: purple
+sdk: docker
+pinned: false
+---
+
 # SpotMe CUSEC
 
 Find yourself in CUSEC 2026 photos using face recognition.
