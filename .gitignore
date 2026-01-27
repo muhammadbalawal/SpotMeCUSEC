@@ -1,17 +1,24 @@
+# Python
 venv/
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
 
-*.json
+# Secrets (never commit)
+service_account.json
 *.key
 
-*.tmp
-
+# OS files
 .DS_Store
-
+*.tmp
 *.log
 
+# Data folder
+data/photos/          # Large photo files (not needed for hosting)
+data/cache/           # Thumbnail cache (regenerated automatically)
 
-data/photos/
+# Keep these (needed for hosting):
+# - data/fonts/              (needed for UI)
+# - data/drive_mapping.json  (needed for image URLs)
+# - data/embeddings/         (needed for face matching)

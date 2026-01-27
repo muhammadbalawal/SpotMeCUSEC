@@ -7,6 +7,12 @@ import numpy as np
 from pathlib import Path
 from typing import Optional
 import logging
+from PIL import Image
+from io import BytesIO
+import pillow_heif
+
+# Register HEIC/HEIF support
+pillow_heif.register_heif_opener()
 
 logger = logging.getLogger(__name__)
 
@@ -45,6 +51,7 @@ def load_embeddings() -> tuple[np.ndarray, np.ndarray]:
 def read_image_from_bytes(image_bytes: bytes) -> Optional[np.ndarray]:
     """
     Convert image bytes to OpenCV image array
+    Supports JPEG, PNG, WebP, HEIC, HEIF formats
 
     Args:
         image_bytes: Raw image bytes
@@ -53,8 +60,27 @@ def read_image_from_bytes(image_bytes: bytes) -> Optional[np.ndarray]:
         OpenCV image array (BGR) or None if failed
     """
     try:
+        # Try OpenCV first (faster for common formats)
         nparr = np.frombuffer(image_bytes, np.uint8)
         img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+
+        if img is not None:
+            return img
+
+        # Fallback to Pillow for HEIC and other formats
+        logger.info("OpenCV failed, trying Pillow (possibly HEIC format)")
+        pil_img = Image.open(BytesIO(image_bytes))
+
+        # Convert to RGB if needed
+        if pil_img.mode in ('RGBA', 'P', 'LA'):
+            pil_img = pil_img.convert('RGB')
+        elif pil_img.mode != 'RGB':
+            pil_img = pil_img.convert('RGB')
+
+        # Convert PIL to OpenCV (RGB to BGR)
+        img = np.array(pil_img)
+        img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
+
         return img
     except Exception as e:
         logger.error(f"Failed to decode image: {e}")
