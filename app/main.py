@@ -5,12 +5,15 @@ FastAPI server for Face Finder application
 from fastapi import FastAPI, UploadFile, File, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, FileResponse
 from pathlib import Path
 import logging
 
 from .face_matcher import get_matcher, DEFAULT_SIMILARITY_THRESHOLD
 from .utils import PHOTOS_DIR
+
+# Static files directory
+STATIC_DIR = Path(__file__).parent.parent / "static"
 
 # Setup logging
 logging.basicConfig(
@@ -54,7 +57,10 @@ async def startup_event():
 
 @app.get("/")
 async def root():
-    """Health check endpoint"""
+    """Serve the frontend"""
+    index_file = STATIC_DIR / "index.html"
+    if index_file.exists():
+        return FileResponse(index_file)
     return {
         "status": "ok",
         "message": "Face Finder API is running",

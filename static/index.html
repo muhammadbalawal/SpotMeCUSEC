@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Face Finder - Find Your Photos</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            color: #fff;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(90deg, #00d4ff, #7b2ff7);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .subtitle {
+            color: #8892b0;
+            font-size: 1.1rem;
+        }
+
+        .upload-section {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .upload-area {
+            border: 2px dashed rgba(255, 255, 255, 0.3);
+            border-radius: 12px;
+            padding: 3rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .upload-area:hover {
+            border-color: #00d4ff;
+            background: rgba(0, 212, 255, 0.05);
+        }
+
+        .upload-area.dragover {
+            border-color: #00d4ff;
+            background: rgba(0, 212, 255, 0.1);
+        }
+
+        .upload-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+
+        .upload-text {
+            font-size: 1.1rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .upload-hint {
+            color: #8892b0;
+            font-size: 0.9rem;
+        }
+
+        #file-input {
+            display: none;
+        }
+
+        .preview-container {
+            display: none;
+            margin-top: 1.5rem;
+            text-align: center;
+        }
+
+        .preview-container.show {
+            display: block;
+        }
+
+        #preview-image {
+            max-width: 200px;
+            max-height: 200px;
+            border-radius: 12px;
+            border: 3px solid #00d4ff;
+        }
+
+        .btn {
+            background: linear-gradient(90deg, #00d4ff, #7b2ff7);
+            border: none;
+            padding: 0.8rem 2rem;
+            font-size: 1rem;
+            color: #fff;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-top: 1rem;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px rgba(0, 212, 255, 0.4);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .options {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1.5rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .option-group {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .option-group label {
+            font-size: 0.85rem;
+            color: #8892b0;
+            margin-bottom: 0.3rem;
+        }
+
+        .option-group input {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 6px;
+            padding: 0.5rem;
+            color: #fff;
+            width: 100px;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 3rem;
+        }
+
+        .loading.show {
+            display: block;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 3px solid rgba(255, 255, 255, 0.1);
+            border-top-color: #00d4ff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .results-section {
+            display: none;
+        }
+
+        .results-section.show {
+            display: block;
+        }
+
+        .results-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .results-count {
+            font-size: 1.3rem;
+        }
+
+        .results-count span {
+            color: #00d4ff;
+            font-weight: bold;
+        }
+
+        .btn-secondary {
+            background: transparent;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            padding: 0.6rem 1.2rem;
+            color: #fff;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .results-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .result-card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .result-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .result-image {
+            width: 100%;
+            aspect-ratio: 4/3;
+            object-fit: cover;
+            cursor: pointer;
+        }
+
+        .result-info {
+            padding: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .result-filename {
+            font-size: 0.85rem;
+            color: #8892b0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 60%;
+        }
+
+        .similarity-badge {
+            background: linear-gradient(90deg, #00d4ff, #7b2ff7);
+            padding: 0.3rem 0.6rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+
+        .no-results {
+            text-align: center;
+            padding: 3rem;
+            color: #8892b0;
+        }
+
+        .error-message {
+            background: rgba(255, 82, 82, 0.1);
+            border: 1px solid rgba(255, 82, 82, 0.3);
+            color: #ff5252;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-top: 1rem;
+            display: none;
+        }
+
+        .error-message.show {
+            display: block;
+        }
+
+        /* Modal for full-size image */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal.show {
+            display: flex;
+        }
+
+        .modal img {
+            max-width: 90%;
+            max-height: 90%;
+            border-radius: 8px;
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            font-size: 2rem;
+            color: #fff;
+            cursor: pointer;
+            background: none;
+            border: none;
+        }
+
+        .stats {
+            text-align: center;
+            color: #8892b0;
+            font-size: 0.9rem;
+            margin-top: 1rem;
+        }
+
+        @media (max-width: 600px) {
+            h1 {
+                font-size: 1.8rem;
+            }
+
+            .upload-area {
+                padding: 2rem 1rem;
+            }
+
+            .results-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Face Finder</h1>
+            <p class="subtitle">Upload a selfie to find all photos where you appear</p>
+        </header>
+
+        <section class="upload-section">
+            <div class="upload-area" id="upload-area">
+                <div class="upload-icon">📸</div>
+                <p class="upload-text">Drop your photo here or click to browse</p>
+                <p class="upload-hint">Supports JPG, PNG, WebP</p>
+            </div>
+            <input type="file" id="file-input" accept="image/*">
+
+            <div class="preview-container" id="preview-container">
+                <img id="preview-image" alt="Preview">
+                <div class="options">
+                    <div class="option-group">
+                        <label for="threshold">Similarity Threshold</label>
+                        <input type="number" id="threshold" value="0.4" min="0" max="1" step="0.05">
+                    </div>
+                    <div class="option-group">
+                        <label for="limit">Max Results</label>
+                        <input type="number" id="limit" value="50" min="1" max="500">
+                    </div>
+                </div>
+                <button class="btn" id="search-btn">Find My Photos</button>
+            </div>
+
+            <div class="error-message" id="error-message"></div>
+        </section>
+
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>Searching for your photos...</p>
+        </div>
+
+        <section class="results-section" id="results-section">
+            <div class="results-header">
+                <p class="results-count">Found <span id="match-count">0</span> photos</p>
+                <button class="btn-secondary" id="new-search-btn">New Search</button>
+            </div>
+            <div class="results-grid" id="results-grid"></div>
+            <div class="no-results" id="no-results">
+                <p>No matching photos found. Try lowering the similarity threshold.</p>
+            </div>
+        </section>
+
+        <p class="stats" id="stats"></p>
+    </div>
+
+    <div class="modal" id="modal">
+        <button class="modal-close" id="modal-close">&times;</button>
+        <img id="modal-image" alt="Full size">
+    </div>
+
+    <script>
+        const uploadArea = document.getElementById('upload-area');
+        const fileInput = document.getElementById('file-input');
+        const previewContainer = document.getElementById('preview-container');
+        const previewImage = document.getElementById('preview-image');
+        const searchBtn = document.getElementById('search-btn');
+        const loading = document.getElementById('loading');
+        const resultsSection = document.getElementById('results-section');
+        const resultsGrid = document.getElementById('results-grid');
+        const noResults = document.getElementById('no-results');
+        const matchCount = document.getElementById('match-count');
+        const newSearchBtn = document.getElementById('new-search-btn');
+        const errorMessage = document.getElementById('error-message');
+        const modal = document.getElementById('modal');
+        const modalImage = document.getElementById('modal-image');
+        const modalClose = document.getElementById('modal-close');
+        const stats = document.getElementById('stats');
+        const thresholdInput = document.getElementById('threshold');
+        const limitInput = document.getElementById('limit');
+
+        let selectedFile = null;
+
+        // Load stats on page load
+        async function loadStats() {
+            try {
+                const response = await fetch('/photos-count');
+                const data = await response.json();
+                stats.textContent = `Database: ${data.total_photos} photos with ${data.total_faces} detected faces`;
+            } catch (e) {
+                console.error('Failed to load stats:', e);
+            }
+        }
+        loadStats();
+
+        // Drag and drop
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleFile(files[0]);
+            }
+        });
+
+        uploadArea.addEventListener('click', () => {
+            fileInput.click();
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleFile(e.target.files[0]);
+            }
+        });
+
+        function handleFile(file) {
+            if (!file.type.startsWith('image/')) {
+                showError('Please select an image file');
+                return;
+            }
+
+            selectedFile = file;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                previewImage.src = e.target.result;
+                previewContainer.classList.add('show');
+                hideError();
+            };
+            reader.readAsDataURL(file);
+        }
+
+        searchBtn.addEventListener('click', async () => {
+            if (!selectedFile) return;
+
+            const threshold = parseFloat(thresholdInput.value) || 0.4;
+            const limit = parseInt(limitInput.value) || 50;
+
+            hideError();
+            loading.classList.add('show');
+            resultsSection.classList.remove('show');
+            searchBtn.disabled = true;
+
+            const formData = new FormData();
+            formData.append('file', selectedFile);
+
+            try {
+                const response = await fetch(`/find-me?threshold=${threshold}&limit=${limit}`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.detail || 'Failed to process image');
+                }
+
+                if (!data.face_detected) {
+                    throw new Error('No face detected in the uploaded image. Please try a clearer photo.');
+                }
+
+                displayResults(data);
+
+            } catch (error) {
+                showError(error.message);
+            } finally {
+                loading.classList.remove('show');
+                searchBtn.disabled = false;
+            }
+        });
+
+        function displayResults(data) {
+            resultsGrid.innerHTML = '';
+            matchCount.textContent = data.total_matches;
+
+            if (data.matches && data.matches.length > 0) {
+                noResults.style.display = 'none';
+                data.matches.forEach(match => {
+                    const card = document.createElement('div');
+                    card.className = 'result-card';
+                    card.innerHTML = `
+                        <img class="result-image" src="${match.url}" alt="${match.filename}" loading="lazy">
+                        <div class="result-info">
+                            <span class="result-filename" title="${match.filename}">${match.filename}</span>
+                            <span class="similarity-badge">${(match.similarity * 100).toFixed(0)}%</span>
+                        </div>
+                    `;
+                    card.querySelector('.result-image').addEventListener('click', () => {
+                        openModal(match.url);
+                    });
+                    resultsGrid.appendChild(card);
+                });
+            } else {
+                noResults.style.display = 'block';
+            }
+
+            resultsSection.classList.add('show');
+        }
+
+        function openModal(src) {
+            modalImage.src = src;
+            modal.classList.add('show');
+        }
+
+        modalClose.addEventListener('click', () => {
+            modal.classList.remove('show');
+        });
+
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                modal.classList.remove('show');
+            }
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                modal.classList.remove('show');
+            }
+        });
+
+        newSearchBtn.addEventListener('click', () => {
+            selectedFile = null;
+            fileInput.value = '';
+            previewContainer.classList.remove('show');
+            resultsSection.classList.remove('show');
+            resultsGrid.innerHTML = '';
+        });
+
+        function showError(message) {
+            errorMessage.textContent = message;
+            errorMessage.classList.add('show');
+        }
+
+        function hideError() {
+            errorMessage.classList.remove('show');
+        }
+    </script>
+</body>
+</html>
