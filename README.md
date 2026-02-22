@@ -1,7 +1,3 @@
----
-title: SpotMe CUSEC
----
-
 # SpotMe CUSEC
 
 Find yourself in CUSEC 2026 photos using face recognition.
