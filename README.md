@@ -1,10 +1,5 @@
 ---
 title: SpotMe CUSEC
-emoji: 📸
-colorFrom: blue
-colorTo: purple
-sdk: docker
-pinned: false
 ---
 
 # SpotMe CUSEC
@@ -12,6 +7,13 @@ pinned: false
 Find yourself in CUSEC 2026 photos using face recognition.
 
 Upload a selfie and instantly discover all event photos where you appear.
+
+---
+
+## Try Out
+
+- [cusecphotofinder-production.up.railway.app](https://cusecphotofinder-production.up.railway.app)
+- [www.spotmecusec.xyz](https://www.spotmecusec.xyz)
 
 ---
 
